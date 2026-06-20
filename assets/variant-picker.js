@@ -259,14 +259,14 @@ class VariantPicker extends HTMLElement {
     const propertyOptionsInput = this.#getBundleInput('bundle-selection-options', bundleTab, slot);
     const propertyImageInput = this.#getBundleInput('bundle-selection-image', bundleTab, slot);
     const propertyDisplayInput = this.#getBundleInput('bundle-selection-display', bundleTab, slot);
+    const displayData = this.#buildVariantDisplay(variantData);
 
     if (idInput) idInput.value = variantData.id;
-    if (propertyTitleInput) propertyTitleInput.value = variantData.title;
-    const formattedOptions = Object.values(variantData.options).filter(Boolean).join(' • ');
-    if (propertyOptionsInput) propertyOptionsInput.value = formattedOptions;
+    if (propertyTitleInput) propertyTitleInput.value = displayData.title;
+    if (propertyOptionsInput) propertyOptionsInput.value = displayData.options;
     if (propertyImageInput) propertyImageInput.value = variantData.image || '';
     if (propertyDisplayInput) {
-      propertyDisplayInput.value = formattedOptions ? `${variantData.title} — ${formattedOptions}` : variantData.title;
+      propertyDisplayInput.value = displayData.display;
     }
 
     const title = previewButton.querySelector('[data-ref="bundle-title"]');
@@ -275,18 +275,21 @@ class VariantPicker extends HTMLElement {
     const plus = previewButton.querySelector('[data-ref="bundle-plus"]');
     const image = previewButton.querySelector('[data-ref="bundle-image"]');
     const imageWrapper = previewButton.querySelector('[data-ref="bundle-image-wrapper"]');
+    const editLabel = this.dataset.editLabel || 'Edit';
+    const includedLabel = this.dataset.includedLabel || 'Included';
+    const isLocked = previewButton.classList.contains('variant-picker__single-preview--locked');
 
     previewButton.classList.remove('variant-picker__single-preview--empty');
     plus?.classList.add('visually-hidden');
 
-    if (title) title.textContent = variantData.title;
-    if (options) options.textContent = Object.values(variantData.options).filter(Boolean).join(' • ');
-    if (cta) cta.textContent = 'Edit';
+    if (title) title.textContent = displayData.title;
+    if (options) options.textContent = displayData.options;
+    if (cta) cta.textContent = isLocked ? includedLabel : editLabel;
 
     if (image && imageWrapper) {
       if (variantData.image) {
         image.src = variantData.image;
-        image.alt = variantData.title;
+        image.alt = displayData.title;
         imageWrapper.classList.remove('visually-hidden');
       } else {
         image.removeAttribute('src');
@@ -501,9 +504,34 @@ class VariantPicker extends HTMLElement {
     return {
       id: dataset.variantId,
       title: dataset.variantTitle,
+      displayTitle: dataset.variantDisplayTitle || '',
+      displayOptions: dataset.variantDisplayOptions || '',
+      productTitle: dataset.productTitle || this.dataset.productTitle || '',
       mediaId: dataset.variantMediaId || '',
       image: dataset.variantImage || '',
       options,
+    };
+  }
+
+  #buildVariantDisplay(variantData) {
+    const productTitle = (variantData?.productTitle || this.dataset.productTitle || '').trim();
+    let title = (variantData?.displayTitle || variantData?.title || '').trim();
+
+    if (!title || title.toLowerCase() === 'default title') {
+      title = productTitle;
+    }
+
+    let options = (variantData?.displayOptions || Object.values(variantData?.options || {}).filter(Boolean).join(' • ')).trim();
+    const normalizedTitle = title.toLowerCase();
+
+    if (options.toLowerCase() === 'default title' || (normalizedTitle && options.toLowerCase() === normalizedTitle)) {
+      options = '';
+    }
+
+    return {
+      title,
+      options,
+      display: options ? `${title} — ${options}` : title,
     };
   }
 
@@ -560,13 +588,14 @@ class VariantPicker extends HTMLElement {
     if (!this.#selectedVariantPreview || !variantData) return;
     const imageWrapper = this.#selectedVariantImage?.closest('.variant-picker__single-preview-image-wrapper');
     const plus = this.querySelector('[data-ref="selected-variant-plus"]');
+    const displayData = this.#buildVariantDisplay(variantData);
 
-    this.#selectedVariantTitle.textContent = variantData.title;
-    this.#selectedVariantOptions.textContent = Object.values(variantData.options).filter(Boolean).join(' • ');
+    this.#selectedVariantTitle.textContent = displayData.title;
+    this.#selectedVariantOptions.textContent = displayData.options;
 
     if (variantData.image) {
       this.#selectedVariantImage.src = variantData.image;
-      this.#selectedVariantImage.alt = variantData.title;
+      this.#selectedVariantImage.alt = displayData.title;
       imageWrapper?.classList.remove('visually-hidden');
     } else {
       this.#selectedVariantImage.removeAttribute('src');
