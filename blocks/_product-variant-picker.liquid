@@ -100,6 +100,36 @@
   assign tab_bundle_1_label = block.settings.tab_bundle_1_label | default: 'Bundle 1'
   assign tab_bundle_2_label = block.settings.tab_bundle_2_label | default: 'Bundle 2'
   assign tab_bundle_3_label = block.settings.tab_bundle_3_label | default: 'Bundle 3'
+  assign bundle_1_enabled = true
+  if block.settings.bundle_1_enabled == false
+    assign bundle_1_enabled = false
+  endif
+  assign bundle_2_enabled = true
+  if block.settings.bundle_2_enabled == false
+    assign bundle_2_enabled = false
+  endif
+  assign bundle_3_enabled = true
+  if block.settings.bundle_3_enabled == false
+    assign bundle_3_enabled = false
+  endif
+  assign show_bundle_1_tab = false
+  if bundle_1_enabled
+    if hide_unconfigured_bundles == false or bundle_1_ready
+      assign show_bundle_1_tab = true
+    endif
+  endif
+  assign show_bundle_2_tab = false
+  if bundle_2_enabled
+    if hide_unconfigured_bundles == false or bundle_2_ready
+      assign show_bundle_2_tab = true
+    endif
+  endif
+  assign show_bundle_3_tab = false
+  if bundle_3_enabled
+    if hide_unconfigured_bundles == false or bundle_3_ready
+      assign show_bundle_3_tab = true
+    endif
+  endif
   assign bundle_edit_label = block.settings.bundle_edit_label | default: 'Edit'
   assign bundle_included_label = block.settings.bundle_included_label | default: 'Included'
   assign requested_variant_id = request.params.variant | default: ''
@@ -279,7 +309,7 @@
           {% endif %}
         </span>
       </button>
-      {% if hide_unconfigured_bundles == false or bundle_1_ready %}
+      {% if show_bundle_1_tab %}
         <button type="button" class="variant-picker__tab" data-action="switch-tab" data-tab="bundle-1">
           <span class="variant-picker__tab-content">
             <span>{{ tab_bundle_1_label }}</span>
@@ -289,7 +319,7 @@
           </span>
         </button>
       {% endif %}
-      {% if hide_unconfigured_bundles == false or bundle_2_ready %}
+      {% if show_bundle_2_tab %}
         <button type="button" class="variant-picker__tab" data-action="switch-tab" data-tab="bundle-2">
           <span class="variant-picker__tab-content">
             <span>{{ tab_bundle_2_label }}</span>
@@ -299,7 +329,7 @@
           </span>
         </button>
       {% endif %}
-      {% if hide_unconfigured_bundles == false or bundle_3_ready %}
+      {% if show_bundle_3_tab %}
         <button type="button" class="variant-picker__tab" data-action="switch-tab" data-tab="bundle-3">
           <span class="variant-picker__tab-content">
             <span>{{ tab_bundle_3_label }}</span>
@@ -335,7 +365,7 @@
         </div>
       </div>
 
-      {% if hide_unconfigured_bundles == false or bundle_1_ready %}
+      {% if show_bundle_1_tab %}
       <div class="variant-picker__panel" data-panel="bundle-1">
         {% if bundle_1_variant == blank %}
           <div class="variant-picker__placeholder">Select a hidden product in "Bundle 1 hidden product" setting.</div>
@@ -395,7 +425,7 @@
       </div>
       {% endif %}
 
-      {% if hide_unconfigured_bundles == false or bundle_2_ready %}
+      {% if show_bundle_2_tab %}
       <div class="variant-picker__panel" data-panel="bundle-2">
         {% if bundle_2_variant == blank %}
           <div class="variant-picker__placeholder">Select a hidden product in "Bundle 2 hidden product" setting.</div>
@@ -455,7 +485,7 @@
       </div>
       {% endif %}
 
-      {% if hide_unconfigured_bundles == false or bundle_3_ready %}
+      {% if show_bundle_3_tab %}
       <div class="variant-picker__panel" data-panel="bundle-3">
         {% if bundle_3_variant == blank %}
           <div class="variant-picker__placeholder">Select a hidden product in "Bundle 3 hidden product" setting.</div>
@@ -1040,6 +1070,12 @@
       "default": "-20% off"
     },
     {
+      "type": "checkbox",
+      "id": "bundle_1_enabled",
+      "label": "Enable Bundle 1 tab",
+      "default": true
+    },
+    {
       "type": "text",
       "id": "tab_bundle_2_label",
       "label": "Bundle 2 tab label",
@@ -1051,6 +1087,12 @@
       "label": "Bundle 2 tab tag (optional)"
     },
     {
+      "type": "checkbox",
+      "id": "bundle_2_enabled",
+      "label": "Enable Bundle 2 tab",
+      "default": true
+    },
+    {
       "type": "text",
       "id": "tab_bundle_3_label",
       "label": "Bundle 3 tab label",
@@ -1060,6 +1102,12 @@
       "type": "text",
       "id": "tab_bundle_3_tag",
       "label": "Bundle 3 tab tag (optional)"
+    },
+    {
+      "type": "checkbox",
+      "id": "bundle_3_enabled",
+      "label": "Enable Bundle 3 tab",
+      "default": true
     },
     {
       "type": "text",
