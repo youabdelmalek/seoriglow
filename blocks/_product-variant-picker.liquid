@@ -1,0 +1,1130 @@
+<script type="module" src="{{ 'variant-picker.js' | asset_url }}"></script>
+
+{% liquid
+  assign product = product
+  if request.visual_preview_mode and product == blank
+    assign product = collections.all.products.first
+  endif
+
+  assign default_variant = product.selected_or_first_available_variant
+  if default_variant == blank
+    assign default_variant = product.variants.first
+  endif
+
+  assign default_bundle_variant_1 = product.variants[1]
+  if default_bundle_variant_1 == blank
+    assign default_bundle_variant_1 = product.selected_or_first_available_variant
+  endif
+
+  assign default_bundle_variant_2 = product.variants[2]
+  if default_bundle_variant_2 == blank
+    assign default_bundle_variant_2 = default_bundle_variant_1
+  endif
+
+  assign bundle_1_product = block.settings.bundle_1_product | default: all_products['double-bundle']
+  assign bundle_1_variant = bundle_1_product.selected_or_first_available_variant
+  if bundle_1_variant == blank
+    assign bundle_1_variant = bundle_1_product.variants.first
+  endif
+  assign bundle_1_count = block.settings.bundle_1_variant_count | default: 2
+  assign bundle_1_prefill_defaults = block.settings.bundle_1_prefill_defaults
+  assign bundle_1_default_variant_positions = block.settings.bundle_1_default_variant_positions | default: ''
+  assign bundle_1_default_variant_positions_list = bundle_1_default_variant_positions | split: ','
+
+  assign bundle_2_product = block.settings.bundle_2_product
+  assign bundle_2_variant = bundle_2_product.selected_or_first_available_variant
+  if bundle_2_variant == blank
+    assign bundle_2_variant = bundle_2_product.variants.first
+  endif
+  assign bundle_2_count = block.settings.bundle_2_variant_count | default: 2
+  assign bundle_2_prefill_defaults = block.settings.bundle_2_prefill_defaults
+  assign bundle_2_default_variant_positions = block.settings.bundle_2_default_variant_positions | default: ''
+  assign bundle_2_default_variant_positions_list = bundle_2_default_variant_positions | split: ','
+
+  assign bundle_3_product = block.settings.bundle_3_product
+  assign bundle_3_variant = bundle_3_product.selected_or_first_available_variant
+  if bundle_3_variant == blank
+    assign bundle_3_variant = bundle_3_product.variants.first
+  endif
+  assign bundle_3_count = block.settings.bundle_3_variant_count | default: 2
+  assign bundle_3_prefill_defaults = block.settings.bundle_3_prefill_defaults
+  assign bundle_3_default_variant_positions = block.settings.bundle_3_default_variant_positions | default: ''
+  assign bundle_3_default_variant_positions_list = bundle_3_default_variant_positions | split: ','
+  assign hide_unconfigured_bundles = block.settings.hide_unconfigured_bundles
+  assign bundle_1_ready = false
+  assign bundle_2_ready = false
+  assign bundle_3_ready = false
+
+  if bundle_1_product != blank and bundle_1_variant != blank and bundle_1_count > 0
+    assign bundle_1_ready = true
+  endif
+
+  if bundle_2_product != blank and bundle_2_variant != blank and bundle_2_count > 0
+    assign bundle_2_ready = true
+  endif
+
+  if bundle_3_product != blank and bundle_3_variant != blank and bundle_3_count > 0
+    assign bundle_3_ready = true
+  endif
+
+  assign tab_single_label = block.settings.tab_single_label | default: 'Single variant'
+  assign tab_bundle_1_label = block.settings.tab_bundle_1_label | default: 'Bundle 1'
+  assign tab_bundle_2_label = block.settings.tab_bundle_2_label | default: 'Bundle 2'
+  assign tab_bundle_3_label = block.settings.tab_bundle_3_label | default: 'Bundle 3'
+  assign requested_variant_id = request.params.variant | default: ''
+  assign has_initial_single_selection = false
+  if requested_variant_id != blank
+    assign has_initial_single_selection = true
+  endif
+%}
+
+{% if product %}
+  <variant-picker
+    data-product-url="{{ product.url }}"
+    data-product-id="{{ product.id }}"
+    data-bundle-1-price="{{ bundle_1_variant.price | default: 0 }}"
+    data-bundle-1-count="{{ bundle_1_count }}"
+    {% if bundle_1_variant.compare_at_price > bundle_1_variant.price %}
+      data-bundle-1-compare-at-price="{{ bundle_1_variant.compare_at_price }}"
+    {% endif %}
+    data-bundle-2-price="{{ bundle_2_variant.price | default: 0 }}"
+    data-bundle-2-count="{{ bundle_2_count }}"
+    {% if bundle_2_variant.compare_at_price > bundle_2_variant.price %}
+      data-bundle-2-compare-at-price="{{ bundle_2_variant.compare_at_price }}"
+    {% endif %}
+    data-bundle-3-price="{{ bundle_3_variant.price | default: 0 }}"
+    data-bundle-3-count="{{ bundle_3_count }}"
+    {% if bundle_3_variant.compare_at_price > bundle_3_variant.price %}
+      data-bundle-3-compare-at-price="{{ bundle_3_variant.compare_at_price }}"
+    {% endif %}
+    style="
+      --margin-top: {{ block.settings.margin_top }}px;
+      --margin-bottom: {{ block.settings.margin_bottom }}px;
+      --variant-tab-badge-text-color: {{ block.settings.tab_badge_text_color | default: '#ffffff' }};
+      --variant-tab-badge-bg-color: {{ block.settings.tab_badge_bg_color | default: '#111111' }};
+      --picker-choices-bg: {{ block.settings.choices_bg_color | default: 'transparent' }};
+      --picker-choices-border-radius: {{ block.settings.choices_border_radius | default: 0 }}px;
+      --picker-choices-color: {{ block.settings.choices_text_color | default: 'inherit' }};
+      --picker-border-color: {{ block.settings.choices_border_color | default: 'rgba(0,0,0,0.2)' }};
+      --picker-active-tab-color: {{ block.settings.choices_active_tab_color | default: 'currentColor' }};
+    "
+    {% if block.settings.additional_class != blank %}
+      class="{{ block.settings.additional_class }}"
+    {% endif %}
+    {{ block.shopify_attributes }}
+    {% if request.visual_preview_mode %}
+      data-visual-preview-mode
+    {% endif %}
+  >
+    <input type="hidden" name="id" value="{% if has_initial_single_selection and default_variant %}{{ default_variant.id }}{% endif %}" data-ref="single-variant-id">
+
+    <input type="hidden" data-ref="bundle-product-id" data-bundle="bundle-1" value="{{ bundle_1_variant.id }}">
+    <input type="hidden" data-ref="bundle-product-id" data-bundle="bundle-2" value="{{ bundle_2_variant.id }}">
+    <input type="hidden" data-ref="bundle-product-id" data-bundle="bundle-3" value="{{ bundle_3_variant.id }}">
+
+    <input type="hidden" data-ref="bundle-property-bundle-label" data-bundle="bundle-1" value="{{ tab_bundle_1_label }}">
+    <input type="hidden" data-ref="bundle-property-bundle-label" data-bundle="bundle-2" value="{{ tab_bundle_2_label }}">
+    <input type="hidden" data-ref="bundle-property-bundle-label" data-bundle="bundle-3" value="{{ tab_bundle_3_label }}">
+
+    {% for bundle_key in (1..3) %}
+      {% assign current_bundle_key = 'bundle-' | append: bundle_key %}
+      {% assign current_bundle_prefill = true %}
+      {% assign current_bundle_default_variant_positions_list = '' | split: ',' %}
+      {% if bundle_key == 1 %}
+        {% assign current_bundle_prefill = bundle_1_prefill_defaults %}
+        {% assign current_bundle_default_variant_positions_list = bundle_1_default_variant_positions_list %}
+      {% elsif bundle_key == 2 %}
+        {% assign current_bundle_prefill = bundle_2_prefill_defaults %}
+        {% assign current_bundle_default_variant_positions_list = bundle_2_default_variant_positions_list %}
+      {% elsif bundle_key == 3 %}
+        {% assign current_bundle_prefill = bundle_3_prefill_defaults %}
+        {% assign current_bundle_default_variant_positions_list = bundle_3_default_variant_positions_list %}
+      {% endif %}
+      {% for slot in (1..10) %}
+        {% assign slot_index = slot | minus: 1 %}
+        {% assign default_bundle_variant = blank %}
+        {% assign default_bundle_variant_image = blank %}
+        {% if current_bundle_prefill %}
+          {% assign desired_variant_position_raw = current_bundle_default_variant_positions_list[slot_index] | strip %}
+          {% assign desired_variant_index = slot_index %}
+          {% if desired_variant_position_raw != blank %}
+            {% assign desired_variant_index = desired_variant_position_raw | plus: 0 | minus: 1 %}
+          {% endif %}
+          {% assign default_bundle_variant = product.variants[desired_variant_index] %}
+          {% if default_bundle_variant == blank %}
+            {% assign default_bundle_variant = product.selected_or_first_available_variant %}
+          {% endif %}
+          {% assign default_bundle_variant_image = default_bundle_variant.featured_image | default: default_bundle_variant.image | default: default_bundle_variant.featured_media.preview_image | default: product.featured_image | default: product.images.first | default: product.media.first.preview_image %}
+        {% endif %}
+
+        <input type="hidden" data-ref="bundle-selection-id" data-bundle="{{ current_bundle_key }}" data-slot="{{ slot }}" value="{% if default_bundle_variant %}{{ default_bundle_variant.id }}{% endif %}">
+        <input type="hidden" data-ref="bundle-selection-title" data-bundle="{{ current_bundle_key }}" data-slot="{{ slot }}" value="{% if default_bundle_variant %}{{ default_bundle_variant.title }}{% endif %}">
+        <input type="hidden" data-ref="bundle-selection-options" data-bundle="{{ current_bundle_key }}" data-slot="{{ slot }}" value="{% if default_bundle_variant %}{{ default_bundle_variant.options | join: ' • ' }}{% endif %}">
+        <input type="hidden" data-ref="bundle-selection-image" data-bundle="{{ current_bundle_key }}" data-slot="{{ slot }}" value="{% if default_bundle_variant_image %}{{ default_bundle_variant_image | image_url: width: 300 }}{% endif %}">
+        <input type="hidden" data-ref="bundle-selection-display" data-bundle="{{ current_bundle_key }}" data-slot="{{ slot }}" value="{% if default_bundle_variant %}{{ default_bundle_variant.title }}{% if default_bundle_variant.options != blank %} — {{ default_bundle_variant.options | join: ' • ' }}{% endif %}{% endif %}">
+      {% endfor %}
+    {% endfor %}
+
+    <div class="variant-picker__hidden-selects">
+      {% for option in product.options_with_values %}
+        {% if forloop.index == 1 %}
+          {% assign default_option_value = default_variant.option1 %}
+        {% elsif forloop.index == 2 %}
+          {% assign default_option_value = default_variant.option2 %}
+        {% else %}
+          {% assign default_option_value = default_variant.option3 %}
+        {% endif %}
+        <select name="option-{{ option.name }}" hidden>
+          {% for value in option.values %}
+            <option
+              value="{{ value }}"
+              data-option-value-id="{{ value.id }}"
+              {% if value.variant.id %}
+                data-variant-id="{{ value.variant.id }}"
+              {% endif %}
+              {% if has_initial_single_selection and value == default_option_value %}
+                selected
+              {% endif %}
+            >
+              {{ value }}
+            </option>
+          {% endfor %}
+        </select>
+      {% endfor %}
+    </div>
+
+    <div class="variant-picker__choices-wrapper">
+    <div class="variant-picker__tabs" data-ref="variant-tabs">
+      <button type="button" class="variant-picker__tab variant-picker__tab--active" data-action="switch-tab" data-tab="single">
+        <span class="variant-picker__tab-content">
+          <span>{{ tab_single_label }}</span>
+          {% if block.settings.tab_single_tag != blank %}
+            <span class="variant-picker__tab-badge">{{ block.settings.tab_single_tag }}</span>
+          {% endif %}
+        </span>
+      </button>
+      {% if hide_unconfigured_bundles == false or bundle_1_ready %}
+        <button type="button" class="variant-picker__tab" data-action="switch-tab" data-tab="bundle-1">
+          <span class="variant-picker__tab-content">
+            <span>{{ tab_bundle_1_label }}</span>
+            {% if block.settings.tab_bundle_1_tag != blank %}
+              <span class="variant-picker__tab-badge">{{ block.settings.tab_bundle_1_tag }}</span>
+            {% endif %}
+          </span>
+        </button>
+      {% endif %}
+      {% if hide_unconfigured_bundles == false or bundle_2_ready %}
+        <button type="button" class="variant-picker__tab" data-action="switch-tab" data-tab="bundle-2">
+          <span class="variant-picker__tab-content">
+            <span>{{ tab_bundle_2_label }}</span>
+            {% if block.settings.tab_bundle_2_tag != blank %}
+              <span class="variant-picker__tab-badge">{{ block.settings.tab_bundle_2_tag }}</span>
+            {% endif %}
+          </span>
+        </button>
+      {% endif %}
+      {% if hide_unconfigured_bundles == false or bundle_3_ready %}
+        <button type="button" class="variant-picker__tab" data-action="switch-tab" data-tab="bundle-3">
+          <span class="variant-picker__tab-content">
+            <span>{{ tab_bundle_3_label }}</span>
+            {% if block.settings.tab_bundle_3_tag != blank %}
+              <span class="variant-picker__tab-badge">{{ block.settings.tab_bundle_3_tag }}</span>
+            {% endif %}
+          </span>
+        </button>
+      {% endif %}
+    </div>
+
+    <div class="variant-picker__panels">
+      <div class="variant-picker__panel variant-picker__panel--active" data-panel="single">
+        <div class="variant-picker__single">
+
+          <button
+            type="button"
+            class="variant-picker__single-preview{% unless has_initial_single_selection %} variant-picker__single-preview--empty{% endunless %}"
+            data-ref="selected-variant-preview"
+            data-action="open-popup"
+            data-target-key="single"
+          >
+            <span class="variant-picker__single-preview-image-wrapper{% unless has_initial_single_selection %} visually-hidden{% endunless %}">
+              <img class="variant-picker__single-preview-image" data-ref="selected-variant-image" alt="{% if has_initial_single_selection and default_variant %}{{ default_variant.title | escape }}{% endif %}" width="64" height="64"{% if has_initial_single_selection and default_variant %} src="{{ default_variant.featured_image | default: default_variant.image | default: default_variant.featured_media.preview_image | default: product.featured_image | default: product.images.first | default: product.media.first.preview_image | image_url: width: 300 }}"{% endif %}/>
+            </span>
+            <span class="variant-picker__single-preview-details">
+              <strong data-ref="selected-variant-title">{% if has_initial_single_selection and default_variant %}{{ default_variant.title }}{% endif %}</strong>
+              <span class="variant-picker__single-preview-options" data-ref="selected-variant-options">{% if has_initial_single_selection and default_variant %}{{ default_variant.options | join: ' • ' }}{% endif %}</span>
+            </span>
+            <span class="variant-picker__single-preview-plus{% if has_initial_single_selection %} visually-hidden{% endif %}" data-ref="selected-variant-plus">+</span>
+            <span class="variant-picker__single-preview-edit">Edit</span>
+          </button>
+        </div>
+      </div>
+
+      {% if hide_unconfigured_bundles == false or bundle_1_ready %}
+      <div class="variant-picker__panel" data-panel="bundle-1">
+        {% if bundle_1_variant == blank %}
+          <div class="variant-picker__placeholder">Select a hidden product in "Bundle 1 hidden product" setting.</div>
+        {% else %}
+          <div class="variant-picker__bundle-grid">
+            {% for slot in (1..10) %}
+              {% if slot <= bundle_1_count %}
+                {% assign slot_index = slot | minus: 1 %}
+                {% assign desired_variant_position_raw = bundle_1_default_variant_positions_list[slot_index] | strip %}
+                {% assign desired_variant_index = slot_index %}
+                {% if desired_variant_position_raw != blank %}
+                  {% assign desired_variant_index = desired_variant_position_raw | plus: 0 | minus: 1 %}
+                {% endif %}
+                {% assign current_variant = blank %}
+                {% if bundle_1_prefill_defaults %}
+                  {% assign current_variant = product.variants[desired_variant_index] %}
+                  {% if current_variant == blank %}
+                    {% assign current_variant = product.selected_or_first_available_variant %}
+                  {% endif %}
+                {% endif %}
+                {% assign current_variant_image = blank %}
+                {% if current_variant != blank %}
+                  {% assign current_variant_image = current_variant.featured_image | default: current_variant.image | default: current_variant.featured_media.preview_image | default: product.featured_image | default: product.images.first | default: product.media.first.preview_image %}
+                {% endif %}
+                <button
+                  type="button"
+                  class="variant-picker__single-preview{% if current_variant == blank %} variant-picker__single-preview--empty{% endif %}"
+                  data-action="open-popup"
+                  data-target-key="bundle-1-item-{{ slot }}"
+                  data-ref="bundle-preview"
+                  data-bundle="bundle-1"
+                  data-slot="{{ slot }}"
+                >
+                  <span class="variant-picker__single-preview-image-wrapper{% if current_variant_image == blank %} visually-hidden{% endif %}" data-ref="bundle-image-wrapper">
+                    {% if current_variant_image %}
+                      <img
+                        class="variant-picker__single-preview-image"
+                        data-ref="bundle-image"
+                        alt="{{ current_variant.title | escape }}"
+                        width="64"
+                        height="64"
+                        src="{{ current_variant_image | image_url: width: 300 }}"
+                      />
+                    {% endif %}
+                  </span>
+                  <span class="variant-picker__single-preview-details">
+                    <strong data-ref="bundle-title">{% if current_variant %}{{ current_variant.title }}{% endif %}</strong>
+                    <span class="variant-picker__single-preview-options" data-ref="bundle-options">{% if current_variant %}{{ current_variant.options | join: ' • ' }}{% endif %}</span>
+                  </span>
+                  <span class="variant-picker__single-preview-plus{% if current_variant %} visually-hidden{% endif %}" data-ref="bundle-plus">+</span>
+                  <span class="variant-picker__single-preview-edit" data-ref="bundle-cta">Edit</span>
+                </button>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if hide_unconfigured_bundles == false or bundle_2_ready %}
+      <div class="variant-picker__panel" data-panel="bundle-2">
+        {% if bundle_2_variant == blank %}
+          <div class="variant-picker__placeholder">Select a hidden product in "Bundle 2 hidden product" setting.</div>
+        {% else %}
+          <div class="variant-picker__bundle-grid">
+            {% for slot in (1..10) %}
+              {% if slot <= bundle_2_count %}
+                {% assign slot_index = slot | minus: 1 %}
+                {% assign desired_variant_position_raw = bundle_2_default_variant_positions_list[slot_index] | strip %}
+                {% assign desired_variant_index = slot_index %}
+                {% if desired_variant_position_raw != blank %}
+                  {% assign desired_variant_index = desired_variant_position_raw | plus: 0 | minus: 1 %}
+                {% endif %}
+                {% assign current_variant = blank %}
+                {% if bundle_2_prefill_defaults %}
+                  {% assign current_variant = product.variants[desired_variant_index] %}
+                  {% if current_variant == blank %}
+                    {% assign current_variant = product.selected_or_first_available_variant %}
+                  {% endif %}
+                {% endif %}
+                {% assign current_variant_image = blank %}
+                {% if current_variant != blank %}
+                  {% assign current_variant_image = current_variant.featured_image | default: current_variant.image | default: current_variant.featured_media.preview_image | default: product.featured_image | default: product.images.first | default: product.media.first.preview_image %}
+                {% endif %}
+                <button
+                  type="button"
+                  class="variant-picker__single-preview{% if current_variant == blank %} variant-picker__single-preview--empty{% endif %}"
+                  data-action="open-popup"
+                  data-target-key="bundle-2-item-{{ slot }}"
+                  data-ref="bundle-preview"
+                  data-bundle="bundle-2"
+                  data-slot="{{ slot }}"
+                >
+                  <span class="variant-picker__single-preview-image-wrapper{% if current_variant_image == blank %} visually-hidden{% endif %}" data-ref="bundle-image-wrapper">
+                    {% if current_variant_image %}
+                      <img
+                        class="variant-picker__single-preview-image"
+                        data-ref="bundle-image"
+                        alt="{{ current_variant.title | escape }}"
+                        width="64"
+                        height="64"
+                        src="{{ current_variant_image | image_url: width: 300 }}"
+                      />
+                    {% endif %}
+                  </span>
+                  <span class="variant-picker__single-preview-details">
+                    <strong data-ref="bundle-title">{% if current_variant %}{{ current_variant.title }}{% endif %}</strong>
+                    <span class="variant-picker__single-preview-options" data-ref="bundle-options">{% if current_variant %}{{ current_variant.options | join: ' • ' }}{% endif %}</span>
+                  </span>
+                  <span class="variant-picker__single-preview-plus{% if current_variant %} visually-hidden{% endif %}" data-ref="bundle-plus">+</span>
+                  <span class="variant-picker__single-preview-edit" data-ref="bundle-cta">Edit</span>
+                </button>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if hide_unconfigured_bundles == false or bundle_3_ready %}
+      <div class="variant-picker__panel" data-panel="bundle-3">
+        {% if bundle_3_variant == blank %}
+          <div class="variant-picker__placeholder">Select a hidden product in "Bundle 3 hidden product" setting.</div>
+        {% else %}
+          <div class="variant-picker__bundle-grid">
+            {% for slot in (1..10) %}
+              {% if slot <= bundle_3_count %}
+                {% assign slot_index = slot | minus: 1 %}
+                {% assign desired_variant_position_raw = bundle_3_default_variant_positions_list[slot_index] | strip %}
+                {% assign desired_variant_index = slot_index %}
+                {% if desired_variant_position_raw != blank %}
+                  {% assign desired_variant_index = desired_variant_position_raw | plus: 0 | minus: 1 %}
+                {% endif %}
+                {% assign current_variant = blank %}
+                {% if bundle_3_prefill_defaults %}
+                  {% assign current_variant = product.variants[desired_variant_index] %}
+                  {% if current_variant == blank %}
+                    {% assign current_variant = product.selected_or_first_available_variant %}
+                  {% endif %}
+                {% endif %}
+                {% assign current_variant_image = blank %}
+                {% if current_variant != blank %}
+                  {% assign current_variant_image = current_variant.featured_image | default: current_variant.image | default: current_variant.featured_media.preview_image | default: product.featured_image | default: product.images.first | default: product.media.first.preview_image %}
+                {% endif %}
+                <button
+                  type="button"
+                  class="variant-picker__single-preview{% if current_variant == blank %} variant-picker__single-preview--empty{% endif %}"
+                  data-action="open-popup"
+                  data-target-key="bundle-3-item-{{ slot }}"
+                  data-ref="bundle-preview"
+                  data-bundle="bundle-3"
+                  data-slot="{{ slot }}"
+                >
+                  <span class="variant-picker__single-preview-image-wrapper{% if current_variant_image == blank %} visually-hidden{% endif %}" data-ref="bundle-image-wrapper">
+                    {% if current_variant_image %}
+                      <img
+                        class="variant-picker__single-preview-image"
+                        data-ref="bundle-image"
+                        alt="{{ current_variant.title | escape }}"
+                        width="64"
+                        height="64"
+                        src="{{ current_variant_image | image_url: width: 300 }}"
+                      />
+                    {% endif %}
+                  </span>
+                  <span class="variant-picker__single-preview-details">
+                    <strong data-ref="bundle-title">{% if current_variant %}{{ current_variant.title }}{% endif %}</strong>
+                    <span class="variant-picker__single-preview-options" data-ref="bundle-options">{% if current_variant %}{{ current_variant.options | join: ' • ' }}{% endif %}</span>
+                  </span>
+                  <span class="variant-picker__single-preview-plus{% if current_variant %} visually-hidden{% endif %}" data-ref="bundle-plus">+</span>
+                  <span class="variant-picker__single-preview-edit" data-ref="bundle-cta">Edit</span>
+                </button>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    </div>
+
+    <dialog-component class="variant-picker__dialog">
+      <dialog id="variant-popup-{{ block.id }}" class="dialog-modal card color-{{ block.settings.color_scheme }}{% if settings.popup_style_mobile == 'bottom' %} dialog-modal--bottom{% endif %}" data-ref="popup-modal">
+        <div class="dialog-modal__content">
+          <div class="variant-picker-popup">
+            <p class="variant-picker-popup__intro">Choose a variant</p>
+            <div class="variant-picker-popup__grid">
+              {% for variant in product.variants %}
+                {% assign popup_variant_image = variant.featured_image | default: variant.image | default: variant.featured_media.preview_image | default: product.featured_image | default: product.images.first | default: product.media.first.preview_image %}
+                <button
+                  type="button"
+                  class="variant-picker-popup__item{% if variant.available == false %} variant-picker-popup__item--disabled{% endif %}"
+                  data-action="select-variant"
+                  data-variant-id="{{ variant.id }}"
+                  data-variant-title="{{ variant.title }}"
+                  data-variant-price="{{ variant.price | default: 0 }}"
+                  data-variant-compare-at-price="{{ variant.compare_at_price | default: variant.price | default: 0 }}"
+                  {% if variant.featured_media %}data-variant-media-id="{{ variant.featured_media.id }}"{% endif %}
+                  {% if popup_variant_image %}data-variant-image="{{ popup_variant_image | image_url: width: 300 }}"{% endif %}
+                  {% for i in (1..product.options.size) %}
+                    {% if i == 1 %}
+                      {% assign option_value = variant.option1 %}
+                    {% elsif i == 2 %}
+                      {% assign option_value = variant.option2 %}
+                    {% else %}
+                      {% assign option_value = variant.option3 %}
+                    {% endif %}
+                    data-option-{{ i }}="{{ option_value }}"
+                  {% endfor %}
+                  {% if variant.available == false %}disabled{% endif %}
+                >
+                  {% if popup_variant_image %}
+                    <span class="variant-picker-popup__item-image">
+                      <img src="{{ popup_variant_image | image_url: width: 300 }}" alt="{{ popup_variant_image.alt | escape }}" width="" height=""/>
+                    </span>
+                  {% endif %}
+                  <span class="variant-picker-popup__item-title">{{ variant.title }}</span>
+                  {% if variant.available == false %}
+                    <span class="variant-picker-popup__item-status">{{ 'products.sold_out' | t }}</span>
+                  {% endif %}
+                </button>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-modal__close">
+          {% render 'button',
+            block: block,
+            icon: 'close',
+            button_style: 'secondary',
+            button_shape: 'small',
+            data: 'data-ref="popup-close"',
+            no_border: true
+          %}
+        </div>
+
+      </dialog>
+
+    </dialog-component>
+
+    <script type="application/json">
+      {{ product.selected_or_first_available_variant | json }}
+    </script>
+  </variant-picker>
+{% else %}
+  <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+{% endif %}
+
+{% stylesheet %}
+  shopify-visual-preview-block-list variant-picker[data-visual-preview-mode] {
+    width: 350px;
+  }
+
+  variant-picker {
+    margin-top: var(--margin-top);
+    margin-bottom: var(--margin-bottom);
+  }
+
+  .variant-picker__options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-md);
+  }
+
+  .variant-picker__option {
+    border: none;
+    padding: 0;
+  }
+
+  .variant-picker__option-name {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--gap-sm);
+  }
+
+  .variant-picker__option-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gap-sm);
+  }
+
+  .variant-picker__choices-wrapper {
+    border: 1px solid var(--picker-border-color);
+    background-color: var(--picker-choices-bg);
+    border-radius: var(--picker-choices-border-radius);
+    padding: var(--picker-choices-border-radius);
+    color: var(--picker-choices-color);
+  }
+
+  .variant-picker__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0;
+    border-bottom: 2px solid var(--picker-border-color);
+    margin-bottom: var(--gap-md);
+  }
+
+  .variant-picker__tab {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    background: transparent;
+    color: inherit;
+    opacity: 0.55;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    border-radius: 0;
+    transition: opacity 0.15s ease, border-color 0.15s ease;
+  }
+
+  .variant-picker__tab:hover {
+    opacity: 0.8;
+  }
+
+  .variant-picker__tab-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  @media screen and (min-width: 750px) {
+    .variant-picker__tab {
+      flex: 0 1 auto;
+    }
+  }
+
+  .variant-picker__tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    color: var(--variant-tab-badge-text-color);
+    background: var(--variant-tab-badge-bg-color);
+    white-space: nowrap;
+  }
+
+  .variant-picker__tab--active {
+    opacity: 1;
+    border-bottom-color: var(--picker-active-tab-color);
+    background: transparent;
+    color: inherit;
+  }
+
+  .variant-picker__panels {
+    display: grid;
+    gap: var(--gap-md);
+  }
+
+  .variant-picker__panel {
+    display: none;
+  }
+
+  .variant-picker__panel--active {
+    display: block;
+  }
+
+  .variant-picker__single {
+    display: grid;
+    gap: var(--gap-sm);
+  }
+
+  .variant-picker__bundle-grid {
+    display: grid;
+    gap: var(--gap-sm);
+  }
+
+  .variant-picker__single-add-button,
+  .variant-picker__single-preview {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 1rem;
+    border: 0;
+    outline: 0;
+    box-shadow: none;
+    background: transparent;
+    color: inherit;
+    border-radius: var(--picker-choices-border-radius);
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .variant-picker__single-add-button:hover,
+  .variant-picker__single-preview:hover,
+  .variant-picker__single-add-button:focus,
+  .variant-picker__single-preview:focus,
+  .variant-picker__single-add-button:focus-visible,
+  .variant-picker__single-preview:focus-visible,
+  .variant-picker__single-add-button:active,
+  .variant-picker__single-preview:active {
+    outline: 0;
+    box-shadow: none;
+  }
+
+  .variant-picker__single-preview {
+    gap: 1rem;
+    align-items: center;
+    border: 1px solid var(--picker-border-color);
+    position: relative;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+  }
+
+  .variant-picker__single-preview-image-wrapper {
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    display: grid;
+    place-items: center;
+  }
+
+  .variant-picker__single-preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 0;
+    outline: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .variant-picker__single-preview-details {
+    flex: 1;
+    display: grid;
+    gap: 0.25rem;
+    text-align: left;
+  }
+
+  .variant-picker__single-preview-edit {
+    color: var(--color-primary);
+    font-size: 0.9rem;
+  }
+
+  .variant-picker__single-preview-plus {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--picker-border-color);
+    background: transparent;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: inherit;
+    flex-shrink: 0;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+  }
+
+  .variant-picker__single-preview-plus.visually-hidden {
+    display: none;
+  }
+
+  .variant-picker__single-preview--empty {
+    border: 1px solid var(--picker-border-color);
+  }
+
+  .variant-picker__single-preview--empty:hover,
+  .variant-picker__single-preview--empty:focus,
+  .variant-picker__single-preview--empty:focus-visible {
+    background: var(--color-surface);
+    border-color: var(--color-primary);
+  }
+
+  .variant-picker__single-preview--empty .variant-picker__single-preview-image-wrapper {
+    display: none;
+  }
+
+  .variant-picker__single-preview--empty .variant-picker__single-preview-details {
+    width: 100%;
+    min-height: 2rem;
+    justify-items: start;
+    padding-right: 0;
+  }
+
+  .variant-picker__single-preview--empty .variant-picker__single-preview-options {
+    visibility: hidden;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .variant-picker__single-preview--empty .variant-picker__single-preview-edit {
+    display: none;
+  }
+
+  .variant-picker__placeholder {
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+  }
+
+  .variant-picker-popup__grid {
+    display: grid;
+    gap: var(--gap-sm);
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .variant-picker-popup__item {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-background);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .variant-picker-popup__item--selected {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .variant-picker-popup__item--disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .variant-picker-popup__item-image {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+
+  .variant-picker-popup__item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .variant-picker-popup__item-title {
+    font-weight: 600;
+  }
+
+  .variant-picker-popup__item-status {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:product_variant_picker",
+  "tag": null,
+  "blocks": [],
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_option_name",
+      "label": "t:show_option_name",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "variant_picker_type",
+      "label": "t:variant_picker_type",
+      "options": [
+        {
+          "value": "buttons",
+          "label": "t:buttons"
+        },
+        {
+          "value": "selects",
+          "label": "t:selects"
+        }
+      ],
+      "default": "buttons"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_swatches",
+      "label": "t:show_swatches",
+      "default": true,
+      "visible_if": "{{ block.settings.variant_picker_type == 'buttons' }}"
+    },
+    {
+      "type": "select",
+      "id": "swatches_size",
+      "label": "t:swatches_size",
+      "options": [
+        {
+          "value": "small",
+          "label": "t:small"
+        },
+        {
+          "value": "normal",
+          "label": "t:normal"
+        },
+        {
+          "value": "big",
+          "label": "t:big"
+        }
+      ],
+      "default": "normal",
+      "visible_if": "{{ block.settings.show_swatches and block.settings.variant_picker_type == 'buttons' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "swatches_rounded",
+      "label": "t:swatches_rounded",
+      "default": true,
+      "visible_if": "{{ block.settings.show_swatches and block.settings.variant_picker_type == 'buttons' }}"
+    },
+    {
+      "type": "header",
+      "content": "Bundle tabs"
+    },
+    {
+      "type": "text",
+      "id": "tab_single_label",
+      "label": "Single tab label",
+      "default": "Single variant"
+    },
+    {
+      "type": "text",
+      "id": "tab_single_tag",
+      "label": "Single tab tag (optional)"
+    },
+    {
+      "type": "text",
+      "id": "tab_bundle_1_label",
+      "label": "Bundle 1 tab label",
+      "default": "Bundle"
+    },
+    {
+      "type": "text",
+      "id": "tab_bundle_1_tag",
+      "label": "Bundle 1 tab tag (optional)",
+      "default": "-20% off"
+    },
+    {
+      "type": "text",
+      "id": "tab_bundle_2_label",
+      "label": "Bundle 2 tab label",
+      "default": "Bundle 2"
+    },
+    {
+      "type": "text",
+      "id": "tab_bundle_2_tag",
+      "label": "Bundle 2 tab tag (optional)"
+    },
+    {
+      "type": "text",
+      "id": "tab_bundle_3_label",
+      "label": "Bundle 3 tab label",
+      "default": "Bundle 3"
+    },
+    {
+      "type": "text",
+      "id": "tab_bundle_3_tag",
+      "label": "Bundle 3 tab tag (optional)"
+    },
+    {
+      "type": "header",
+      "content": "Bundle products"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_unconfigured_bundles",
+      "label": "Hide unconfigured bundle tabs",
+      "default": true
+    },
+    {
+      "type": "product",
+      "id": "bundle_1_product",
+      "label": "Bundle 1 hidden product"
+    },
+    {
+      "type": "checkbox",
+      "id": "bundle_1_prefill_defaults",
+      "label": "Bundle 1 prefill defaults",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "bundle_1_default_variant_positions",
+      "label": "Bundle 1 default variant positions",
+      "info": "Comma-separated positions (example: 1,2,5). Used only when prefill defaults is enabled."
+    },
+    {
+      "type": "range",
+      "id": "bundle_1_variant_count",
+      "label": "Bundle 1 selectable variants",
+      "default": 2,
+      "min": 1,
+      "max": 10,
+      "step": 1
+    },
+    {
+      "type": "product",
+      "id": "bundle_2_product",
+      "label": "Bundle 2 hidden product"
+    },
+    {
+      "type": "checkbox",
+      "id": "bundle_2_prefill_defaults",
+      "label": "Bundle 2 prefill defaults",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "bundle_2_default_variant_positions",
+      "label": "Bundle 2 default variant positions",
+      "info": "Comma-separated positions (example: 3,4,8). Used only when prefill defaults is enabled."
+    },
+    {
+      "type": "range",
+      "id": "bundle_2_variant_count",
+      "label": "Bundle 2 selectable variants",
+      "default": 2,
+      "min": 1,
+      "max": 10,
+      "step": 1
+    },
+    {
+      "type": "product",
+      "id": "bundle_3_product",
+      "label": "Bundle 3 hidden product"
+    },
+    {
+      "type": "checkbox",
+      "id": "bundle_3_prefill_defaults",
+      "label": "Bundle 3 prefill defaults",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "bundle_3_default_variant_positions",
+      "label": "Bundle 3 default variant positions",
+      "info": "Comma-separated positions (example: 2,6,7). Used only when prefill defaults is enabled."
+    },
+    {
+      "type": "range",
+      "id": "bundle_3_variant_count",
+      "label": "Bundle 3 selectable variants",
+      "default": 2,
+      "min": 1,
+      "max": 10,
+      "step": 1
+    },
+    {
+      "type": "color",
+      "id": "tab_badge_text_color",
+      "label": "Tab tag text color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "tab_badge_bg_color",
+      "label": "Tab tag background color",
+      "default": "#111111"
+    },
+    {
+      "type": "header",
+      "content": "Choices wrapper"
+    },
+    {
+      "type": "color",
+      "id": "choices_bg_color",
+      "label": "Choices background color",
+      "default": "rgba(0,0,0,0)"
+    },
+    {
+      "type": "color",
+      "id": "choices_text_color",
+      "label": "Choices text color"
+    },
+    {
+      "type": "color",
+      "id": "choices_border_color",
+      "label": "Choices border color",
+      "default": "rgba(0,0,0,0.2)"
+    },
+    {
+      "type": "color",
+      "id": "choices_active_tab_color",
+      "label": "Active tab underline color"
+    },
+    {
+      "type": "range",
+      "id": "choices_border_radius",
+      "label": "Choices border radius",
+      "default": 0,
+      "min": 0,
+      "max": 60,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "t:margins"
+    },
+    {
+      "type": "range",
+      "id": "margin_top",
+      "label": "t:margin_top",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom",
+      "label": "t:margin_bottom",
+      "default": 15,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "t:advanced_settings"
+    },
+    {
+      "type": "text",
+      "id": "additional_class",
+      "label": "t:additional_class",
+      "info": "t:additional_class_info"
+    },
+    {
+      "type": "header",
+      "content": "t:go_further"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:go_further_description"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:product_variant_picker",
+      "category": "t:product_form"
+    }
+  ]
+}
+{% endschema %}

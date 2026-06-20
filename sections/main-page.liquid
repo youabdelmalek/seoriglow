@@ -1,0 +1,30 @@
+{% if section.settings.hide_header_and_footer %}
+  <style>
+    .shopify-section-group-header-group,
+    .shopify-section-group-footer-group {
+      display: none !important;
+    }
+  </style>
+{% endif %}
+
+{% schema %}
+{
+  "name": "t:page",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "hide_header_and_footer",
+      "label": "t:hide_header_and_footer",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:go_further"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:go_further_description"
+    }
+  ]
+}
+{% endschema %}

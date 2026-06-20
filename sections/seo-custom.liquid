@@ -1,0 +1,90 @@
+{% assign canonic_defined = false %}
+
+{%- for block in section.blocks -%}
+  {%- case block.type -%}
+    {%- when 'noindex' -%}
+      {%- if request.path contains block.settings.title -%}
+        <meta name="robots" content="noindex,nofollow">
+      {%- endif -%}
+    {%- when 'canonical' -%}
+      {%- if request.path contains block.settings.title -%}
+        {% assign canonic_defined = true %}
+        {% comment %} theme-check-disable RemoteAsset {% endcomment %}
+        <link rel="canonical" href="{{ block.settings.url }}">
+        {% comment %} theme-check-enable RemoteAsset {% endcomment %}
+      {%- endif -%}
+  {%- endcase -%}
+{%- endfor -%}
+
+{% unless canonic_defined %}
+  <link rel="canonical" href="{{ canonical_url }}">
+{% endunless %}
+
+{% schema %}
+{
+  "name": "t:seo_custom",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:seo_custom_info"
+    }
+  ],
+  "blocks": [
+    {
+      "name": "t:seo_custom_noindex",
+      "type": "noindex",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "t:seo_custom_noindex_page_name",
+          "default": "t:seo_custom_page_default"
+        },
+        {
+          "type": "paragraph",
+          "content": "t:seo_custom_noindex_tutorial"
+        },
+        {
+          "type": "header",
+          "content": "t:go_further"
+        },
+        {
+          "type": "paragraph",
+          "content": "t:seo_custom_expert_ovirank"
+        }
+      ]
+    },
+    {
+      "name": "t:seo_custom_canonical",
+      "type": "canonical",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "t:seo_custom_canonical_page_name",
+          "info": "t:seo_custom_canonical_page_example",
+          "default": "t:seo_custom_page_default"
+        },
+        {
+          "type": "text",
+          "id": "url",
+          "label": "t:seo_custom_canonical_url_label",
+          "info": "t:seo_custom_canonical_url_info"
+        },
+        {
+          "type": "paragraph",
+          "content": "t:seo_custom_canonical_tutorial"
+        },
+        {
+          "type": "header",
+          "content": "t:go_further"
+        },
+        {
+          "type": "paragraph",
+          "content": "t:seo_custom_expert_ovirank"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,47 @@
+{% doc %}
+  Affiche une carte d'article.
+
+  @param article - {Article} L'article à afficher.
+  @param block - {Block} Le bloc à utiliser.
+  @param children - {String} Les enfants à afficher (blocs).
+
+  @example
+  {% render 'article-card', article: article, block: block, children: children %}
+{% enddoc %}
+
+<a
+  href="{{ article.url }}"
+  class="article-card{% if block.settings.wrap_in_card %} card color-{{ block.settings.color_scheme }}{% endif %}"
+  style="--gap: {{ block.settings.layout_gap }}px;"
+  {{ block.shopify_attributes }}
+  {% if request.visual_preview_mode %}
+    data-visual-preview-mode
+  {% endif %}
+>
+  {{ children }}
+</a>
+
+{% stylesheet %}
+  .article-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    width: 100%;
+    overflow: hidden;
+    text-decoration: none;
+    transition: transform 0.2s ease-in-out;
+    position: relative;
+    cursor: pointer;
+    color: var(--color-foreground);
+  }
+
+  .article-card[data-visual-preview-mode] {
+    max-width: 280px;
+  }
+
+  @media (width > 750px) {
+    .article-card:hover {
+      transform: translateY(-2px);
+    }
+  }
+{% endstylesheet %}

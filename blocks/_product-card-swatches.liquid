@@ -1,0 +1,121 @@
+{% doc %}
+  Affiche les swatches pour un produit.
+{% enddoc %}
+
+<script src="{{ 'product-card-swatches.js' | asset_url }}" type="module"></script>
+
+{% assign product = closest.product %}
+
+{% for option in product.options_with_values %}
+  {% liquid
+    assign native_swatch_count = option.values | map: 'swatch' | compact | size
+
+    assign has_custom_swatches = false
+    for product_variant in product.variants
+      if product_variant.metafields.color.hexcode != blank or product_variant.metafields.color.image != blank
+        assign has_custom_swatches = true
+      endif
+    endfor
+  %}
+
+  <product-card-swatches
+    class="
+      product-card-swatches-block
+      {%- if block.settings.show_on_display == 'desktop_only' %} mobile-hide{% endif -%}
+      {%- if block.settings.show_on_display == 'mobile_only' %} desktop-hide{% endif -%}
+      {%- if block.settings.additional_class != blank %} {{ block.settings.additional_class }}{% endif -%}
+    "
+    {{ block.shopify_attributes }}
+    {% if request.visual_preview_mode %}
+      data-visual-preview-mode
+    {% endif %}
+  >
+    {% if native_swatch_count > 0 %}
+      {% render 'product-swatches',
+        option: option,
+        swatches_size: block.settings.swatches_size,
+        swatches_rounded: block.settings.swatches_rounded,
+        swatch_source: 'native',
+        swatches_for_product_card: true
+      %}
+    {% elsif has_custom_swatches %}
+      {% render 'product-swatches',
+        option: option,
+        swatches_size: block.settings.swatches_size,
+        swatches_rounded: block.settings.swatches_rounded,
+        swatch_source: 'custom',
+        swatches_for_product_card: true
+      %}
+    {% endif %}
+  </product-card-swatches>
+{% endfor %}
+
+{% schema %}
+{
+  "name": "t:swatches",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "show_on_display",
+      "label": "t:show_on_display",
+      "default": "desktop_and_mobile",
+      "options": [
+        { "value": "desktop_and_mobile", "label": "t:desktop_and_mobile" },
+        { "value": "desktop_only", "label": "t:desktop_only" },
+        { "value": "mobile_only", "label": "t:mobile_only" }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "swatches_size",
+      "label": "t:swatches_size",
+      "options": [
+        {
+          "value": "small",
+          "label": "t:small"
+        },
+        {
+          "value": "normal",
+          "label": "t:normal"
+        },
+        {
+          "value": "big",
+          "label": "t:big"
+        }
+      ],
+      "default": "small"
+    },
+    {
+      "type": "checkbox",
+      "id": "swatches_rounded",
+      "label": "t:swatches_rounded",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:advanced_settings"
+    },
+    {
+      "type": "text",
+      "id": "additional_class",
+      "label": "t:additional_class",
+      "info": "t:additional_class_info"
+    },
+    {
+      "type": "header",
+      "content": "t:go_further"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:go_further_description"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:swatches",
+      "category": "t:product"
+    }
+  ]
+}
+{% endschema %}
